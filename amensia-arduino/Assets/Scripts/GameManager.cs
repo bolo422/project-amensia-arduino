@@ -25,7 +25,12 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-       // StartCoroutine(ChangeLightPercentage());
+        // StartCoroutine(ChangeLightPercentage());
+    }
+
+    public void UpdateArduinoInput(int dial, int volt, int ldr)
+    {
+        Debug.Log("dial: "+dial + "volt: "+volt + "ldr:" +  ldr);
     }
 
     IEnumerator ChangeLightPercentage()
