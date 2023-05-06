@@ -10,11 +10,11 @@ public class GameManager : MonoBehaviour
 
     public bool activateArduino = false;
     public int highestLDR = 0;
-    public int minimumLDR = 1000;
+    public int minimumLDR = 0;
     public int currentLDR = 0;
     public int currentDial = 0;
     public int minimumDial = 0;
-    public int highestDial = 1000;
+    public int highestDial = 0;
     [SerializeField] private GameObject pauseMenu;
 
     private void Awake()
@@ -43,9 +43,9 @@ public class GameManager : MonoBehaviour
         if (!activateArduino)
         {
             if (Input.GetKey(KeyCode.Plus) || Input.GetKey(KeyCode.KeypadPlus))
-                UpdateArduinoLDRInput(Mathf.Clamp(currentLDR + 1, highestLDR, minimumLDR));
+                UpdateArduinoLDRInput(Mathf.Clamp(currentLDR + 1, minimumLDR, highestLDR));
             if (Input.GetKey(KeyCode.Minus) || Input.GetKey(KeyCode.KeypadMinus))
-                UpdateArduinoLDRInput(Mathf.Clamp(currentLDR - 1, highestLDR, minimumLDR));
+                UpdateArduinoLDRInput(Mathf.Clamp(currentLDR - 1, minimumLDR, highestLDR));
         }
         PlayerLamp.Instance.ChangeLightPercentage(CalculatePercentage(currentLDR, minimumLDR, highestLDR));
 
