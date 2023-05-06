@@ -10,7 +10,10 @@ public class PlayerLamp : MonoBehaviour
     [SerializeField] private float minimumLight = 1.5f;
     [SerializeField] private float maximumLight = 10f;
     private float currentLight;
-    
+    [SerializeField] private GameObject outerCircle;
+    [SerializeField] private GameObject innerCircle;
+    private float innerCircleFactor = .7f;
+
     public static PlayerLamp Instance { get; private set; }
     
     public float CurrentLight
@@ -20,6 +23,8 @@ public class PlayerLamp : MonoBehaviour
         {
             currentLight = Mathf.Clamp(value, minimumLight, maximumLight);
             light.pointLightOuterRadius = currentLight;
+            outerCircle.transform.localScale = new Vector3(currentLight*2, currentLight*2, 1);
+            innerCircle.transform.localScale = new Vector3(currentLight*2 * innerCircleFactor, currentLight*2 * innerCircleFactor, 1);
         }
     }
     
@@ -44,9 +49,9 @@ public class PlayerLamp : MonoBehaviour
     }
     
     // inputs between 0 and 100
-    public void ChangeLightPercentage(int lightPercentage) 
+    public void ChangeLightPercentage(float lightPercentage) 
     {
-        CurrentLight = maximumLight * ((float)lightPercentage / 100);
+        CurrentLight = maximumLight * (lightPercentage / 100);
     }
 
 }

@@ -14,6 +14,8 @@ public class ArduinoController : MonoBehaviour
 
     private static string incomingMsg = "";
     private static string outgoingMsg = "";
+    
+    private static bool isArduinoActivated = true;
 
     private static int dial, volt, ldr;
 
@@ -21,7 +23,6 @@ public class ArduinoController : MonoBehaviour
     {
         sp = new SerialPort("COM4", 9600);
         sp.Open();
-
 
         while (true)
         {
@@ -43,11 +44,14 @@ public class ArduinoController : MonoBehaviour
 
     private void Start()
     {
-        IOThread.Start();
+        isArduinoActivated = GameManager.Instance.activateArduino;
+        if(!isArduinoActivated) return;
     }
 
     private void Update()
     {
+        if(!isArduinoActivated) return;
+        
         if (incomingMsg != "")
         {
             string[] parts = incomingMsg.Split(';');
@@ -55,7 +59,11 @@ public class ArduinoController : MonoBehaviour
             dial = int.Parse(parts[1]);
             volt = int.Parse(parts[3]);
             ldr = int.Parse(parts[5]);
-
+            /*
+             
+             
+             
+             */
             GameManager.Instance.UpdateArduinoInput(dial, volt, ldr);
         }
 
