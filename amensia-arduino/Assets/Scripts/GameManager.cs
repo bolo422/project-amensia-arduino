@@ -2,18 +2,19 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
     public bool activateArduino = false;
-    public int minimumLight = 0;
-    public int maxLight = 1000;
-    public int currentLight = 0;
-    public int currentLockPickValue = 0;
-    public int maxLockPickValue = 0;
-    public int minLockPickValue = 1000;
+    public int highestLDR = 0;
+    public int minimumLDR = 1000;
+    public int currentLDR = 0;
+    public int currentDial = 0;
+    public int minimumDial = 0;
+    public int highestDial = 1000;
     [SerializeField] private GameObject pauseMenu;
 
     private void Awake()
@@ -31,10 +32,10 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        if (maxLockPickValue == 0)
-            maxLockPickValue = 1023;
-        if (maxLight == 0)
-            maxLight = 1023;
+        if (highestDial == 0)
+            highestDial = 1023;
+        if (highestLDR == 0)
+            highestLDR = 1023;
     }
 
     private void Update()
@@ -42,11 +43,11 @@ public class GameManager : MonoBehaviour
         if (!activateArduino)
         {
             if (Input.GetKey(KeyCode.Plus) || Input.GetKey(KeyCode.KeypadPlus))
-                UpdateArduinoLDRInput(Mathf.Clamp(currentLight + 1, minimumLight, maxLight));
+                UpdateArduinoLDRInput(Mathf.Clamp(currentLDR + 1, highestLDR, minimumLDR));
             if (Input.GetKey(KeyCode.Minus) || Input.GetKey(KeyCode.KeypadMinus))
-                UpdateArduinoLDRInput(Mathf.Clamp(currentLight - 1, minimumLight, maxLight));
+                UpdateArduinoLDRInput(Mathf.Clamp(currentLDR - 1, highestLDR, minimumLDR));
         }
-        PlayerLamp.Instance.ChangeLightPercentage(CalculatePercentage(currentLight, minimumLight, maxLight));
+        PlayerLamp.Instance.ChangeLightPercentage(CalculatePercentage(currentLDR, minimumLDR, highestLDR));
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -57,48 +58,48 @@ public class GameManager : MonoBehaviour
 
     private static float CalculatePercentage(float value, float min, float max)
     {
-        return (value - min) * 100 / (max - min);
+        return InvertValue((value - min) * 100 / (max - min), 100);
     }
 
     public void UpdateArduinoInput(int dial, int volt, int ldr)
     {
-        Debug.Log(dial + volt + ldr);
-        UpdateArduinoDialInput(InvertValue(Mathf.Clamp(dial, minLockPickValue, maxLockPickValue), maxLockPickValue));
-        UpdateArduinoLDRInput(InvertValue(Mathf.Clamp(ldr, minimumLight, maxLight), maxLight));
+        //Debug.Log(dial + volt + ldr);
+        UpdateArduinoDialInput(Mathf.Clamp(dial, minimumDial, highestDial));
+        UpdateArduinoLDRInput(Mathf.Clamp(ldr, minimumLDR, highestLDR));
     }
 
-    private int InvertValue(int value, int maxValue)
+    private static float InvertValue(float value, float maxValue)
     {
         return (value - maxValue) * -1;
     }
 
     public void UpdateArduinoDialInput(int dial)
     {
-        currentLockPickValue = dial;
+        currentDial = dial;
     }
 
     public void UpdateArduinoLDRInput(int ldr)
     {
-        currentLight = ldr;
+        currentLDR = ldr;
     }
 
     public void SetMaxLDR()
     {
-        maxLight = currentLight;
+        highestLDR = currentLDR;
     }
 
     public void SetMinLDR()
     {
-        minimumLight = currentLight;
+        minimumLDR = currentLDR;
     }
 
     public void SetMaxDial()
     {
-        maxLockPickValue = currentLockPickValue;
+        highestDial = currentDial;
     }
 
     public void SetMinDial()
     {
-        minLockPickValue = currentLockPickValue;
+        minimumDial = currentDial;
     }
 }
