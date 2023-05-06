@@ -85,21 +85,21 @@ public class GameManager : MonoBehaviour
 
     public void SetMaxLDR()
     {
-        highestLDR = currentLDR;
+        minimumLDR = currentLDR;
     }
 
     public void SetMinLDR()
     {
-        minimumLDR = currentLDR;
+        highestLDR = currentLDR;
     }
 
     public void SetMaxDial()
     {
-        highestDial = currentDial;
+        minimumDial = currentDial;
     }
 
     public void SetMinDial()
     {
-        minimumDial = currentDial;
+        highestDial = currentDial;
     }
 }
