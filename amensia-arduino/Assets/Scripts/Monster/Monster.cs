@@ -86,7 +86,8 @@ public class Monster : MonoBehaviour
                     lastPatrolPoint = FindClosestPatrolPoint();
                 var patrolRoute = lastPatrolPoint.transform.parent.GetComponent<PatrolRoute>();
                 var nextPatrolPoint = patrolRoute.GetNextPatrolPoint(lastPatrolPoint);
-                aiDestination.transform.position = nextPatrolPoint.transform.position;
+                var nextPatrolPointPosition = nextPatrolPoint.transform.position;
+                aiDestination.transform.position = new Vector3(nextPatrolPointPosition.x, nextPatrolPointPosition.y, aiDestination.transform.position.z);
                 lastPatrolPoint = nextPatrolPoint;
             }
         }
@@ -117,7 +118,8 @@ public class Monster : MonoBehaviour
         yield return new WaitForSeconds(3f);
         //find closest patrol point and set it as destination
         var closestPatrolPoint = FindClosestPatrolPoint();
-        aiDestination.transform.position = closestPatrolPoint.transform.position;
+        var closestPatrolPointPos = closestPatrolPoint.transform.position;
+        aiDestination.transform.position = new Vector3(closestPatrolPointPos.x, closestPatrolPointPos.y, aiDestination.transform.position.z);
         playerNotFoundCoroutineRunning = false;
         inRoute = true;
         lastPatrolPoint = closestPatrolPoint;

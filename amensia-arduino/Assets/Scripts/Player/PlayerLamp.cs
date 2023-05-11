@@ -12,7 +12,7 @@ public class PlayerLamp : MonoBehaviour
     private float currentLight;
     [SerializeField] private GameObject outerCircle;
     [SerializeField] private GameObject innerCircle;
-    private float innerCircleFactor = .7f;
+    private float innerCircleFactor = 1f;
 
     public static PlayerLamp Instance { get; private set; }
     

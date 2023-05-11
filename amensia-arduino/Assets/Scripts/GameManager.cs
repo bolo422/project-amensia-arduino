@@ -43,9 +43,9 @@ public class GameManager : MonoBehaviour
         if (!activateArduino)
         {
             if (Input.GetKey(KeyCode.Plus) || Input.GetKey(KeyCode.KeypadPlus))
-                UpdateArduinoLDRInput(Mathf.Clamp(currentLDR + 1, minimumLDR, highestLDR));
+                UpdateArduinoLDRInput(Mathf.Clamp(currentLDR - 20, minimumLDR, highestLDR));
             if (Input.GetKey(KeyCode.Minus) || Input.GetKey(KeyCode.KeypadMinus))
-                UpdateArduinoLDRInput(Mathf.Clamp(currentLDR - 1, minimumLDR, highestLDR));
+                UpdateArduinoLDRInput(Mathf.Clamp(currentLDR + 20, minimumLDR, highestLDR));
         }
         PlayerLamp.Instance.ChangeLightPercentage(CalculatePercentage(currentLDR, minimumLDR, highestLDR));
 
