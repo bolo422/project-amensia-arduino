@@ -52,7 +52,7 @@ public class ArduinoController : MonoBehaviour
     private void Update()
     {
         //if(!isArduinoActivated) return;
-        Debug.Log(incomingMsg);
+        // Debug.Log(incomingMsg);
         if (incomingMsg != "")
         {
             string[] parts = incomingMsg.Split(';');
