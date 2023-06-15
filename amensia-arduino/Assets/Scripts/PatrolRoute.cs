@@ -31,7 +31,7 @@ public class PatrolRoute : MonoBehaviour
     public GameObject GetNextPatrolPoint(GameObject lastPoint)
     {
         int index = patrolPoints.IndexOf(lastPoint);
-        Debug.Log("index: " + index);
+        // Debug.Log("index: " + index);
         if (index == patrolPoints.Count - 1)
             return patrolPoints[0];
         return patrolPoints[index + 1];

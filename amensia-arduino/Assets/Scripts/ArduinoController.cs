@@ -19,9 +19,11 @@ public class ArduinoController : MonoBehaviour
 
     private static int dial, volt, ldr;
 
+    public static string port = "COM3";
+
     private static void DataTread()
     {
-        sp = new SerialPort("COM4", 9600);
+        sp = new SerialPort(port, 9600);
         sp.Open();
 
         while (true)
@@ -52,14 +54,16 @@ public class ArduinoController : MonoBehaviour
     private void Update()
     {
         //if(!isArduinoActivated) return;
-        // Debug.Log(incomingMsg);
         if (incomingMsg != "")
         {
+            // Debug.Log(incomingMsg);
             string[] parts = incomingMsg.Split(';');
 
             dial = int.Parse(parts[1]);
             volt = int.Parse(parts[3]);
             ldr = int.Parse(parts[5]);
+            
+            // Debug.Log(dial);
             
             GameManager.Instance.UpdateArduinoInput(dial, volt, ldr);
         }
