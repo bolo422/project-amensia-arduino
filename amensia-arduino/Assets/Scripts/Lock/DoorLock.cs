@@ -11,42 +11,37 @@ namespace Lock
         // public event Action<int> OnMinimumDialChanged;
         // public event Action<int> OnHighestDialChanged;
         // subscribe to them and change the values of the variables below
-        private int minimumDial = 0;
-        private int highestDial = 0;
-        private (int min, int max) passwordRange;
+
+        public (int min, int max) PasswordRange { get; set; } = (400,500);
+
         private int currentDial;
         private GameManager gameManager;
         private bool isLockActive;
         // method Lockpicking set value o isLockActive
         private Image image;
-        private bool unlocked;
         private Sprite lockedSprite;
         private Sprite unlockedSprite;
+        public Door ActiveDoor { get; set; }
         public bool Lockpicking 
         {
             set => isLockActive = value;
         }
-        
+
+        private bool unlocked;
         public bool Unlocked
         {
             get => unlocked;
+            set
+            {
+                unlocked = value;
+                if (image == null) return;
+                image.sprite = value ? unlockedSprite : lockedSprite;
+            }
         }
 
         [SerializeField] private GameObject hookSelectingPos;
         public GameObject HookSelectingPos => hookSelectingPos;
 
-        private void OnMinimumDialChanged(int value)
-        {
-            minimumDial = value;
-            SetPasswordRange();
-        }
-    
-        private void OnHighestDialChanged(int value)
-        {
-            highestDial = value;
-            SetPasswordRange();
-        }
-    
         private void OnDialChanged(int value)
         {
             currentDial = value;
@@ -62,40 +57,21 @@ namespace Lock
         private void Start()
         {
             gameManager = GameManager.Instance;
-            
-            minimumDial = gameManager.MinimumDial;
-            highestDial = gameManager.HighestDial;
-        
-            gameManager.OnMinimumDialChanged += OnMinimumDialChanged;
-            gameManager.OnHighestDialChanged += OnHighestDialChanged;
             gameManager.OnDialChanged += OnDialChanged;
-        
-            SetPasswordRange();
         }
 
-        public void SetPasswordRange()
-        {
-            var range = highestDial - minimumDial;
-            var fivePercentOfRange = Mathf.FloorToInt(range * gameManager.LockPickingDifficulty);
-
-            var lowerBound = UnityEngine.Random.Range(minimumDial, highestDial - fivePercentOfRange);
-            var upperBound = lowerBound + fivePercentOfRange;
-
-            passwordRange = (lowerBound, upperBound);
-            unlocked = false;
-            Debug.Log("lock: " + transform.name + " - password: " + passwordRange);
-        }
-        
         private void Update()
         {
-            if (!isLockActive || unlocked) return;
-
-            if (currentDial >= passwordRange.min && currentDial <= passwordRange.max)
+            if (!isLockActive || Unlocked) return;
+            
+            if ((currentDial >= PasswordRange.min && currentDial <= PasswordRange.max) || Input.GetKeyDown(KeyCode.K))
             {
-                Debug.Log("Door unlocked, solution: " + passwordRange.min + " - " + passwordRange.max + "current: " + currentDial);
-                unlocked = true;
+                // Debug.Log("Door unlocked, solution: " + PasswordRange.min + " - " + PasswordRange.max + "current: " + currentDial);
+                Unlocked = true;
                 image.sprite = unlockedSprite;
-                DoorManager.Instance.SwitchHook();
+                LockManager.Instance.SwitchHook();
+                if (ActiveDoor != null)
+                    ActiveDoor.LockUnlocked(this);
             }
             else
                 image.sprite = lockedSprite;

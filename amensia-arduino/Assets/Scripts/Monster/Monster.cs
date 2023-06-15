@@ -1,8 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Pathfinding;
 using Player;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Monster
 {
@@ -141,6 +143,17 @@ namespace Monster
                 }
             }
             return closestPatrolPoint;
+        }
+
+        private void OnTriggerEnter2D(Collider2D other)
+        {
+            // if player, restart level
+            if (other.CompareTag("Player"))
+            {
+                //use unity native restar scene
+                // SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+                Debug.Log("Player is dead, restart level");
+            }
         }
     }
 }

@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.UI;
 
 namespace Player
 {
@@ -14,6 +16,10 @@ namespace Player
         [SerializeField] private GameObject innerCircle;
         private float innerCircleFactor = 1f;
         private Coroutine lightTransitionCoroutine;
+        [SerializeField] private Slider fuelSlider;
+        private float maxOil = 100.0f;
+        private float oil;
+        private float oilConsumption;
 
         public static PlayerLamp Instance { get; private set; }
     
@@ -40,13 +46,16 @@ namespace Player
             {
                 Destroy(gameObject); // this must be a duplicate from a scene reload - DESTROY!
             }
-        
+            
+            oil = maxOil;
             light = GetComponent<Light2D>();
         }
 
         void Start()
         {
             CurrentLight = minimumLight;
+            oilConsumption = GameManager.Instance.OilConsumption;
+            StartCoroutine(ConsumeOil());
         }
     
         // inputs between 0 and 100
@@ -86,6 +95,26 @@ namespace Player
             lightTransitionCoroutine = null;
         }
 
+        private void Update()
+        {
+            fuelSlider.value = oil/100f;
+        }
 
+        private IEnumerator ConsumeOil()
+        {
+            var percentage = (CurrentLight - minimumLight) / ( maximumLight - minimumLight);
+            
+            if (percentage <= 0.15f) percentage = 0;
+
+            oil -= oilConsumption * percentage;
+            yield return new WaitForSeconds(0.2f);
+            StartCoroutine(ConsumeOil());
+        }
+
+        public void AddOil(float instanceOilRefuelQuanity)
+        {
+            oil += instanceOilRefuelQuanity;
+            if (oil > maxOil) oil = maxOil;
+        }
     }
 }

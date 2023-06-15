@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Player;
 using UnityEngine;
@@ -13,86 +14,60 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject interactMessage;
     private string filePath;
     private bool isPaused = false;
+    [SerializeField] private int currentLevel;
+    private Dictionary<int, int> keysPerLevel;
+    private int playerCurrentKeys;
+    private bool finalDoorUnlocked;
+    public bool FinalDoorUnlocked => finalDoorUnlocked;
 
     public float LockPickingDifficulty { get; set; } = 0.1f;
+    public float OilConsumption { get; set; } = .2f;
+    public float OilRefuelQuanity { get; set; } = 65f;
 
 
-    public bool activateArduino = false;
-    private int highestLDR = 0;
-    private int minimumLDR = 0;
-    private int currentLDR = 0;
-    private int currentDial = 0;
+    public bool ActivateArduino { get; set; } = false;
     private int minimumDial = 0;
     private int highestDial = 0;
+    private int currentDial = 0;
     
-    public event Action<int> OnLDRChanged;
     public event Action<int> OnDialChanged;
-    public event Action<int> OnMinimumLDRChanged;
-    public event Action<int> OnMinimumDialChanged;
-    public event Action<int> OnHighestLDRChanged;
-    public event Action<int> OnHighestDialChanged;
+    public event Action OnDialLimitsChanged;
     
-    public int CurrentLDR
-    {
-        get => currentLDR;
-        set
-        {
-            currentLDR = value;
-            OnLDRChanged?.Invoke(currentLDR);
-        }
-    }
-    
-    public int CurrentDial
+    private int CurrentLDR { get; set; } = 0;
+    private int MinimumLDR { get; set; } = 0;
+
+    private int HighestLDR { get; set; } = 0;
+
+    private int CurrentDial 
     {
         get => currentDial;
         set
         {
             currentDial = value;
-            OnDialChanged?.Invoke(currentDial);
+            OnDialChanged?.Invoke(value);
         }
     }
 
-    public int MinimumLDR
-    {
-        get => minimumLDR;
-        set
-        {
-            minimumLDR = value;
-            OnMinimumLDRChanged?.Invoke(minimumLDR);
-        }
-    }
-    
     public int MinimumDial
     {
         get => minimumDial;
         set
         {
             minimumDial = value;
-            OnMinimumDialChanged?.Invoke(minimumDial);
+            OnDialLimitsChanged?.Invoke();
         }
     }
-    
-    public int HighestLDR
-    {
-        get => highestLDR;
-        set
-        {
-            highestLDR = value;
-            OnHighestLDRChanged?.Invoke(highestLDR);
-        }
-    }
-    
     public int HighestDial
     {
         get => highestDial;
         set
         {
             highestDial = value;
-            OnHighestDialChanged?.Invoke(highestDial);
+            OnDialLimitsChanged?.Invoke();
         }
     }
     
-    public bool IsInteractMessageActive
+    public bool InteractMessage
     {
         set => interactMessage.SetActive(value);
     }
@@ -114,8 +89,8 @@ public class GameManager : MonoBehaviour
         
         if (highestDial == 0)
             highestDial = 1023;
-        if (highestLDR == 0)
-            highestLDR = 1023;
+        if (HighestLDR == 0)
+            HighestLDR = 1023;
         
         // Load values from the file on game startup
         LoadValuesFromFile();
@@ -123,21 +98,32 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        keysPerLevel = new Dictionary<int, int>();
+        keysPerLevel.Add(0, 2);
+        keysPerLevel.Add(1, 4);
+    }
 
+    public void AddKey()
+    {
+        playerCurrentKeys++;
+        if (playerCurrentKeys >= keysPerLevel[currentLevel])
+        {
+            finalDoorUnlocked = true;
+        }
     }
 
     private void Update()
     {
-        if (!activateArduino)
+        if (!ActivateArduino)
         {
             if (Input.GetKey(KeyCode.Plus) || Input.GetKey(KeyCode.KeypadPlus))
-                UpdateArduinoLDRInput(Mathf.Clamp(currentLDR - 20, minimumLDR, highestLDR));
+                UpdateArduinoLDRInput(Mathf.Clamp(CurrentLDR - 20, MinimumLDR, HighestLDR));
             if (Input.GetKey(KeyCode.Minus) || Input.GetKey(KeyCode.KeypadMinus))
-                UpdateArduinoLDRInput(Mathf.Clamp(currentLDR + 20, minimumLDR, highestLDR));
+                UpdateArduinoLDRInput(Mathf.Clamp(CurrentLDR + 20, MinimumLDR, HighestLDR));
         }
         
         if(!isPaused)
-            PlayerLamp.Instance.ChangeLightPercentage(CalculatePercentage(currentLDR, minimumLDR, highestLDR), lightLerpSpeed);
+            PlayerLamp.Instance.ChangeLightPercentage(CalculatePercentage(CurrentLDR, MinimumLDR, HighestLDR), lightLerpSpeed);
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -201,7 +187,7 @@ public class GameManager : MonoBehaviour
 
     public void SetMinDial()
     {
-        if(currentDial > 500)
+        if(CurrentDial > 500)
             HighestDial = CurrentDial;
         else
             MinimumDial = CurrentDial;
@@ -211,15 +197,15 @@ public class GameManager : MonoBehaviour
     
     private void SaveValuesToFile()
     {
-        Debug.Log("Saving values -> | minimum ld: " + minimumLDR + " | maximum ldr: " + highestLDR + " | minimum dial: " + minimumDial + " | maximum dial: " + highestDial);
+        Debug.Log("Saving values -> | minimum ld: " + MinimumLDR + " | maximum ldr: " + HighestLDR + " | minimum dial: " + minimumDial + " | maximum dial: " + highestDial);
         CorrectLdrAndDialEqualValues();
         try
         {
             // Create a new StreamWriter to write the values to the file
             using (StreamWriter writer = new StreamWriter(filePath))
             {
-                writer.WriteLine($"minimum ldr: {minimumLDR}");
-                writer.WriteLine($"maximum ldr: {highestLDR}");
+                writer.WriteLine($"minimum ldr: {MinimumLDR}");
+                writer.WriteLine($"maximum ldr: {HighestLDR}");
                 writer.WriteLine($"minimum dial: {minimumDial}");
                 writer.WriteLine($"maximum dial: {highestDial}");
             }
@@ -244,11 +230,11 @@ public class GameManager : MonoBehaviour
                     {
                         if (line.StartsWith("minimum ldr:"))
                         {
-                            minimumLDR = int.Parse(line.Substring("minimum ldr: ".Length));
+                            MinimumLDR = int.Parse(line.Substring("minimum ldr: ".Length));
                         }
                         else if (line.StartsWith("maximum ldr:"))
                         {
-                            highestLDR = int.Parse(line.Substring("maximum ldr: ".Length));
+                            HighestLDR = int.Parse(line.Substring("maximum ldr: ".Length));
                         }
                         else if (line.StartsWith("minimum dial:"))
                         {
@@ -279,7 +265,7 @@ public class GameManager : MonoBehaviour
             equal = true;            
         }
 
-        if (highestLDR == minimumLDR)
+        if (HighestLDR == MinimumLDR)
         {
             HighestLDR++;
             equal = true;            
