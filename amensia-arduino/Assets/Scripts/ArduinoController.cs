@@ -1,12 +1,8 @@
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using System.IO.Ports;
 using System.Threading;
-using static UnityEditor.Rendering.CameraUI;
-using UnityEngine.Windows;
-using System;
 using Microsoft.Win32;
+using UnityEngine;
 
 public class ArduinoController : MonoBehaviour
 {
@@ -15,8 +11,11 @@ public class ArduinoController : MonoBehaviour
 
     private static string incomingMsg = "";
     private static string outgoingMsg = "";
+    private GameManager gameManager;
 
     private static string arduinoName = "CH340";
+
+    [SerializeField] private bool isMainMenu;
     
     //private static bool isArduinoActivated = true;
 
@@ -52,13 +51,15 @@ public class ArduinoController : MonoBehaviour
         //isArduinoActivated = GameManager.Instance.activateArduino;
         //if(!isArduinoActivated) return;
         port = AutodetectArduinoPort();
+        gameManager = GameManager.Instance;
         if (port != null)
         {
             IOThread.Start();
-            GameManager.Instance.ActivateArduino = true;
+            if(gameManager != null)
+                gameManager.ActivateArduino = true;
         }
-        else
-            GameManager.Instance.ActivateArduino = false;
+        else if(gameManager != null)
+            gameManager.ActivateArduino = false;
         
     }
 
@@ -75,8 +76,14 @@ public class ArduinoController : MonoBehaviour
             ldr = int.Parse(parts[5]);
             
             // Debug.Log(dial);
-            
-            GameManager.Instance.UpdateArduinoInput(dial, volt, ldr);
+            if (isMainMenu)
+            {
+                ArduinoSettings.Instance.UpdateArduinoInput(dial, volt, ldr);
+            }
+            else
+            {
+                gameManager.UpdateArduinoInput(dial, volt, ldr);
+            }
         }
 
     }

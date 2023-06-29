@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using Pathfinding;
@@ -26,10 +25,16 @@ namespace Monster
         private bool playerNotFoundCoroutineRunning = false;
         private bool inRoute = true;
         private GameObject lastPatrolPoint;
+        private AIPath aiPath;
+        private bool increaseEnemyVelocity;
+        private bool increaseEnemyVelocityCoroutineRunning;
+        private SpriteRenderer spriteRenderer;
 
         private void Awake()
         {
             aiDestinationSetter = GetComponent<AIDestinationSetter>();
+            aiPath = GetComponent<AIPath>();
+            spriteRenderer = GetComponent<SpriteRenderer>();
         }
 
         private void Start()
@@ -70,6 +75,10 @@ namespace Monster
                     lastPlayerPosition = PlayerLamp.Instance.transform.position;
                     aiDestination.transform.position = new Vector3(lastPlayerPosition.x, lastPlayerPosition.y, lastPlayerPosition.z);
                     inRoute = false;
+                    if (!increaseEnemyVelocityCoroutineRunning)
+                    {
+                        StartCoroutine(IncreaseEnemyVelocityCoroutine());
+                    }
                 }
             }
             else
@@ -95,6 +104,23 @@ namespace Monster
                     lastPatrolPoint = nextPatrolPoint;
                 }
             }
+            
+            spriteRenderer.flipX = aiDestination.transform.position.x < transform.position.x;
+        }
+
+        IEnumerator IncreaseEnemyVelocityCoroutine()
+        {
+            // wait for 3 seconds
+            increaseEnemyVelocityCoroutineRunning = true;
+            yield return new WaitForSeconds(3f);
+            increaseEnemyVelocity = true;
+            while(increaseEnemyVelocity)
+            {
+                aiPath.maxSpeed += 0.1f;
+                yield return new WaitForSeconds(0.3f);
+            }
+
+            aiPath.maxSpeed = 4f;
         }
 
         private bool IsPlayerVisible()
@@ -127,6 +153,7 @@ namespace Monster
             playerNotFoundCoroutineRunning = false;
             inRoute = true;
             lastPatrolPoint = closestPatrolPoint;
+            increaseEnemyVelocity = false;
         }
 
         private GameObject FindClosestPatrolPoint()
@@ -150,9 +177,11 @@ namespace Monster
             // if player, restart level
             if (other.CompareTag("Player"))
             {
-                //use unity native restar scene
-                // SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-                Debug.Log("Player is dead, restart level");
+                // load schene GameOver
+                if (!GameManager.Instance.IsPlayerImmortal())
+                {
+                    SceneManager.LoadScene("GameOver");
+                }
             }
         }
     }

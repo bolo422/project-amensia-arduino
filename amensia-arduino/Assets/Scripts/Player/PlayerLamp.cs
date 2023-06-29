@@ -40,7 +40,6 @@ namespace Player
             if (Instance == null)
             {
                 Instance = this; // this is the first instance
-                DontDestroyOnLoad(gameObject);
             }
             else
             {
@@ -66,6 +65,12 @@ namespace Player
 
         public void ChangeLightPercentage(float lightPercentage, float transitionTime = 1f)
         {
+            if (oil <= 0)
+            {
+                lightPercentage = 0;
+                transitionTime = 0.01f;
+            }
+            
             float targetLight = maximumLight * (lightPercentage / 100);
     
             // If there's an ongoing transition, stop it before starting a new one
@@ -98,6 +103,10 @@ namespace Player
         private void Update()
         {
             fuelSlider.value = oil/100f;
+            if (oil <= 0)
+            {
+                ChangeLightPercentage(0, 0.01f);
+            }
         }
 
         private IEnumerator ConsumeOil()

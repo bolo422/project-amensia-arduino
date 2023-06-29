@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Player;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -16,12 +20,21 @@ public class GameManager : MonoBehaviour
     private bool isPaused = false;
     [SerializeField] private int currentLevel;
     private Dictionary<int, int> keysPerLevel;
-    private int playerCurrentKeys;
-    private bool finalDoorUnlocked;
-    public bool FinalDoorUnlocked => finalDoorUnlocked;
+    private Dictionary<int, List<KeySpawner>> keySpawners;
+    private Dictionary<int, int>  playerCurrentKeys;
+    private Dictionary<int, bool> isDoorUnlocked;
+    private Dictionary<int, FinalDoor> finalDoors;
+    private Dictionary<int, Color> levelColors;
+    [SerializeField] Color level0Color;
+    [SerializeField] Color level1Color;
+    [SerializeField] Color level2Color;
+    [SerializeField] Light2D globalLight;
+    private bool playerIsImmortal = false;
+    [SerializeField] private GameObject lightHackText;
+    [SerializeField] private GameObject playerImmortalText;
 
     public float LockPickingDifficulty { get; set; } = 0.1f;
-    public float OilConsumption { get; set; } = .2f;
+    public float OilConsumption { get; set; } = 0.2f;
     public float OilRefuelQuanity { get; set; } = 65f;
 
 
@@ -77,7 +90,6 @@ public class GameManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this; // this is the first instance
-            DontDestroyOnLoad(gameObject);
             
             // Set the file path based on the platform-specific persistent data path
             filePath = Path.Combine(Application.persistentDataPath, "game_data.txt");
@@ -87,6 +99,27 @@ public class GameManager : MonoBehaviour
             Destroy(gameObject); // this must be a duplicate from a scene reload - DESTROY!
         }
         
+        playerCurrentKeys = new Dictionary<int, int>();
+        finalDoors = new Dictionary<int, FinalDoor>();
+        keysPerLevel = new Dictionary<int, int>();
+        levelColors = new Dictionary<int, Color>();
+        isDoorUnlocked = new Dictionary<int, bool>();
+        keySpawners = new Dictionary<int, List<KeySpawner>>();
+        
+        keysPerLevel.Add(0, 1);
+        keysPerLevel.Add(1, 3);
+        keysPerLevel.Add(2, 3);
+        
+        levelColors.Add(0, level0Color);
+        levelColors.Add(1, level1Color);
+        levelColors.Add(2, level2Color);
+        
+        foreach (var finalDoor in FindObjectsOfType<FinalDoor>())
+        {
+            finalDoors.Add(finalDoor.Level, finalDoor);
+        }
+
+
         if (highestDial == 0)
             highestDial = 1023;
         if (HighestLDR == 0)
@@ -98,17 +131,44 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        keysPerLevel = new Dictionary<int, int>();
-        keysPerLevel.Add(0, 2);
-        keysPerLevel.Add(1, 4);
+
+        foreach (var door in FindObjectsOfType<FinalDoor>())
+        {
+            isDoorUnlocked.Add(door.Level, false);
+        }
+        
+        
+        foreach (var keySpawner in FindObjectsOfType<KeySpawner>())
+        {
+            if(keySpawners.ContainsKey(keySpawner.Level))
+                keySpawners[keySpawner.Level].Add(keySpawner);
+            else
+                keySpawners.Add(keySpawner.Level, new List<KeySpawner>{keySpawner});
+        }
+
+        foreach (var keySpawner in keySpawners[currentLevel])
+        {
+            keySpawner.SpawnKey();
+        }
     }
 
-    public void AddKey()
+    public bool FinalDoorUnlocked(int level)
     {
-        playerCurrentKeys++;
-        if (playerCurrentKeys >= keysPerLevel[currentLevel])
+        return isDoorUnlocked[level];
+    }
+
+    public void AddKey(int level)
+    {
+        if(playerCurrentKeys.ContainsKey(level))
+            playerCurrentKeys[level]++;
+        else
         {
-            finalDoorUnlocked = true;
+            playerCurrentKeys.Add(level, 1);
+        }
+        
+        if (playerCurrentKeys[level] >= keysPerLevel[currentLevel])
+        {
+            isDoorUnlocked[level] = true;
         }
     }
 
@@ -127,10 +187,36 @@ public class GameManager : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            isPaused = !isPaused;
-            pauseMenu.SetActive(!pauseMenu.activeSelf);
-            Time.timeScale = pauseMenu.activeSelf ? 0 : 1;
+            PauseGame();
         }
+
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            if (globalLight.intensity == 0) {
+                globalLight.intensity = 0.8f;
+                lightHackText.SetActive(true);
+            }
+            else
+            {
+                globalLight.intensity = 0;
+                lightHackText.SetActive(false);
+            }
+        }
+        
+        if (Input.GetKeyDown(KeyCode.J))
+        {
+            playerIsImmortal = !playerIsImmortal;
+            playerImmortalText.SetActive(playerIsImmortal);
+        }
+        
+        
+    }
+
+    public void PauseGame()
+    {
+        isPaused = !isPaused;
+        pauseMenu.SetActive(!pauseMenu.activeSelf);
+        Time.timeScale = pauseMenu.activeSelf ? 0 : 1;
     }
 
     private static float CalculatePercentage(float value, float min, float max)
@@ -271,5 +357,58 @@ public class GameManager : MonoBehaviour
             equal = true;            
         }
         return equal;
+    }
+
+    public void MainMenu()
+    {
+        SceneManager.LoadScene("MainMenu");
+    }
+
+    public void NextLevel(FinalDoor door)
+    {
+        currentLevel = door.Level + 1;
+
+        if (LastLevel())
+            Credits();
+        
+        foreach (var keySpawner in FindObjectsOfType<KeySpawner>())
+        {
+            keySpawner.DestroyKey();
+        }
+        foreach (var keySpawner in keySpawners[currentLevel])
+        {
+            keySpawner.SpawnKey();
+        }
+        Destroy(door.gameObject);
+    }
+
+    private void Credits()
+    {
+        SceneManager.LoadScene("Credits");
+    }
+
+    private bool LastLevel()
+    {
+        foreach (var door in finalDoors.Values)
+        {
+            if (door.Level == currentLevel)
+                return false;
+        }
+        return true;
+    }
+
+    public Color GetLevelColor(int level)
+    {
+        return levelColors[level];
+    }
+
+    public void SetVolume(Slider slider)
+    {
+        AudioListener.volume = slider.value;
+    }
+
+    public bool IsPlayerImmortal()
+    {
+        return playerIsImmortal;
     }
 }
